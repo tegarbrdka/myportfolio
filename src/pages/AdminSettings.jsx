@@ -4,10 +4,29 @@ import { useProjects } from '../context/ProjectContext'
 import {
   ArrowLeft, Save, Plus, Trash2, Home, LayoutGrid,
   Settings, User, BarChart2, Clock, Lock, CheckCircle,
-  AlertCircle, Upload, X, Crop
+  AlertCircle, Upload, X, Crop, Loader
 } from 'lucide-react'
 import gsap from 'gsap'
 import ImageCropper from '../components/ui/ImageCropper'
+import { supabase } from '../lib/supabase'
+
+// ── Upload cropped base64 → Supabase Storage, return public URL ───
+async function uploadToStorage(base64DataUrl, filename) {
+  // Convert base64 → Blob
+  const res      = await fetch(base64DataUrl)
+  const blob     = await res.blob()
+  const ext      = blob.type.includes('png') ? 'png' : 'jpg'
+  const path     = `${filename}-${Date.now()}.${ext}`
+
+  const { error } = await supabase.storage
+    .from('photos')
+    .upload(path, blob, { upsert: true, contentType: blob.type })
+
+  if (error) throw error
+
+  const { data } = supabase.storage.from('photos').getPublicUrl(path)
+  return data.publicUrl
+}
 
 // ── Sidebar nav items ─────────────────────────────────────────────
 const NAV = [
@@ -66,8 +85,9 @@ export default function AdminSettings() {
   }
 
   // ── Photo state (Hero) ────────────────────────────────────────
-  const [heroPreview, setHeroPreview] = useState(profile.photoUrl)
-  const [heroInput,   setHeroInput]   = useState(profile.photoUrl)
+  const [heroPreview,   setHeroPreview]   = useState(profile.photoUrl)
+  const [heroInput,     setHeroInput]     = useState(profile.photoUrl)
+  const [heroUploading, setHeroUploading] = useState(false)
   const heroFileRef  = useRef(null)
   const [heroCropSrc, setHeroCropSrc] = useState(null)
 
@@ -82,18 +102,33 @@ export default function AdminSettings() {
 
   const handleHeroCropped = (cropped) => {
     setHeroPreview(cropped)
-    setHeroInput(cropped)
+    setHeroInput(cropped)   // temp base64 for preview
     setHeroCropSrc(null)
   }
 
-  const saveHeroPhoto = () => {
-    updateProfile({ photoUrl: heroInput })
-    showToast('Hero photo updated')
+  const saveHeroPhoto = async () => {
+    try {
+      setHeroUploading(true)
+      let url = heroInput
+      // If it's base64, upload to Storage first
+      if (heroInput.startsWith('data:')) {
+        url = await uploadToStorage(heroInput, 'hero')
+        setHeroPreview(url)
+        setHeroInput(url)
+      }
+      await updateProfile({ photoUrl: url })
+      showToast('Hero photo updated')
+    } catch (err) {
+      showToast('Upload failed: ' + err.message, 'error')
+    } finally {
+      setHeroUploading(false)
+    }
   }
 
   // ── Photo state (About) ───────────────────────────────────────
-  const [aboutPreview, setAboutPreview] = useState(profile.aboutPhotoUrl || profile.photoUrl)
-  const [aboutInput,   setAboutInput]   = useState(profile.aboutPhotoUrl || profile.photoUrl)
+  const [aboutPreview,   setAboutPreview]   = useState(profile.aboutPhotoUrl || profile.photoUrl)
+  const [aboutInput,     setAboutInput]     = useState(profile.aboutPhotoUrl || profile.photoUrl)
+  const [aboutUploading, setAboutUploading] = useState(false)
   const aboutFileRef  = useRef(null)
   const [aboutCropSrc, setAboutCropSrc] = useState(null)
 
@@ -112,9 +147,22 @@ export default function AdminSettings() {
     setAboutCropSrc(null)
   }
 
-  const saveAboutPhoto = () => {
-    updateProfile({ aboutPhotoUrl: aboutInput })
-    showToast('About photo updated')
+  const saveAboutPhoto = async () => {
+    try {
+      setAboutUploading(true)
+      let url = aboutInput
+      if (aboutInput.startsWith('data:')) {
+        url = await uploadToStorage(aboutInput, 'about')
+        setAboutPreview(url)
+        setAboutInput(url)
+      }
+      await updateProfile({ aboutPhotoUrl: url })
+      showToast('About photo updated')
+    } catch (err) {
+      showToast('Upload failed: ' + err.message, 'error')
+    } finally {
+      setAboutUploading(false)
+    }
   }
 
   // ── Stats state ───────────────────────────────────────────────
@@ -346,8 +394,8 @@ export default function AdminSettings() {
                   placeholder="/photo.png or https://..."
                   className="admin-input mb-4"
                 />
-                <button onClick={saveHeroPhoto} className="admin-btn-primary flex items-center gap-2">
-                  <Save size={13} /> Save Hero Photo
+                <button onClick={saveHeroPhoto} disabled={heroUploading} className="admin-btn-primary flex items-center gap-2 disabled:opacity-50">
+                  {heroUploading ? <><Loader size={13} className="animate-spin" /> Uploading...</> : <><Save size={13} /> Save Hero Photo</>}
                 </button>
               </div>
 
@@ -396,8 +444,8 @@ export default function AdminSettings() {
                   placeholder="/photo.png or https://..."
                   className="admin-input mb-4"
                 />
-                <button onClick={saveAboutPhoto} className="admin-btn-primary flex items-center gap-2">
-                  <Save size={13} /> Save About Photo
+                <button onClick={saveAboutPhoto} disabled={aboutUploading} className="admin-btn-primary flex items-center gap-2 disabled:opacity-50">
+                  {aboutUploading ? <><Loader size={13} className="animate-spin" /> Uploading...</> : <><Save size={13} /> Save About Photo</>}
                 </button>
               </div>
             </div>
