@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --ink:         #080808;
+    --ink-mid:     #0F0F0F;
+    --ink-light:   #161616;
+    --ink-raised:  #1E1E1E;
+    --ink-border:  #262626;
+    --silver:      #C8C8C8;
+    --platinum:    #E8E8E8;
+    --white-pure:  #F5F5F5;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background: var(--ink);
+    color: var(--platinum);
+    font-family: 'Outfit', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* Lenis */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+  .lenis.lenis-stopped { overflow: hidden; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 1px; }
+  ::-webkit-scrollbar-track { background: #080808; }
+  ::-webkit-scrollbar-thumb { background: #333; }
+
+  /* Cursor */
+  * { cursor: none !important; }
+
+  /* Selection */
+  ::selection { background: rgba(200,200,200,0.15); color: #fff; }
+
+  /* Focus */
+  :focus-visible { outline: 1px solid rgba(200,200,200,0.3); outline-offset: 3px; }
+}
+
+/* ─── Grain ─────────────────────────────────────────── */
+.grain-overlay {
+  position: fixed;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.042;
+  pointer-events: none;
+  z-index: 9997;
+  animation: grain 0.5s steps(1) infinite;
+}
+@keyframes grain {
+  0%   { transform: translate(0,0); }
+  20%  { transform: translate(-2%,-3%); }
+  40%  { transform: translate(3%,2%); }
+  60%  { transform: translate(-1%,3%); }
+  80%  { transform: translate(3%,-1%); }
+  100% { transform: translate(-2%,3%); }
+}
+
+/* ─── Custom Cursor — handled via inline styles in CustomCursor.jsx ── */
+/* Legacy classes kept for reference, not used */
+.lux-cursor,
+.lux-cursor-ring,
+.lux-cursor-label { display: none; }
+
+/* ─── Luxury Divider ─────────────────────────────────── */
+.lux-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.lux-divider::before,
+.lux-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #262626);
+}
+.lux-divider::before {
+  background: linear-gradient(90deg, #262626, transparent);
+}
+
+/* ─── Admin (keeps lime accent) ──────────────────────── */
+@layer components {
+  .admin-input {
+    @apply w-full bg-ink-raised border border-ink-border text-white px-4 py-3
+           focus:outline-none focus:border-silver/40 transition-colors duration-200
+           font-mono text-sm placeholder-ink-muted;
+  }
+  .admin-btn-primary {
+    @apply bg-white text-black font-mono font-bold text-xs px-6 py-3
+           hover:bg-platinum transition-all duration-200 uppercase tracking-widest;
+  }
+  .admin-btn-ghost {
+    @apply border border-ink-border text-silver-dim font-mono text-xs px-6 py-3
+           hover:border-silver/40 hover:text-silver transition-all duration-200 uppercase tracking-widest;
+  }
+  .tech-tag {
+    @apply inline-block border border-ink-border text-silver-dim
+           text-[10px] font-mono px-2.5 py-1 uppercase tracking-wider
+           hover:border-silver/30 hover:text-silver transition-colors duration-200;
+  }
+}
+
+/* ─── Horizontal scroll ──────────────────────────────── */
+.horizontal-scroll-container { overflow: hidden; }
+
+/* ─── Line clamp ─────────────────────────────────────── */
+.line-clamp-2 { display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
+.line-clamp-3 { display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden; }
+
+/* ─── Luxury card hover line ─────────────────────────── */
+.card-hover-line {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 1px; width: 0;
+  background: linear-gradient(90deg, transparent, var(--silver), transparent);
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.group:hover .card-hover-line { width: 100%; }
+
+/* ─── Text shimmer ───────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.text-shimmer {
+  background: linear-gradient(90deg, #888 0%, #E8E8E8 40%, #E8E8E8 60%, #888 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+
+/* ─── Number reveal ──────────────────────────────────── */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ─── Mobile ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  * { cursor: auto !important; }
+  .lux-cursor, .lux-cursor-ring, .lux-cursor-label { display: none; }
+}
